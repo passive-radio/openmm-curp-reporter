@@ -1,0 +1,15 @@
+include \
+    LICENSE \
+    README.md \
+    MANIFEST.in \
+    setup.* \
+    requirements.* \
+    .gitignore \
+
+graft reporter
+graft test
+graft input
+
+exclude \
+    .venv* \
+    .git \
