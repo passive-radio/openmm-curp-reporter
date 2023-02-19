@@ -21,7 +21,7 @@ INSTALL_REQUIRES = [
 ]
 
 PACKAGES = [
-    'reporter', 'test', 'input'
+    'curp_reporter', 'test', 'input'
 ]
 
 CLASSIFIERS = [

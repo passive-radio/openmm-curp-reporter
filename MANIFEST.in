@@ -6,7 +6,7 @@ include \
     requirements.* \
     .gitignore \
 
-graft reporter
+graft curp_reporter
 graft test
 graft input
 
