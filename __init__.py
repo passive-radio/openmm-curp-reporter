@@ -1,1 +1,1 @@
-from . import reporter
+from . import curp_reporter

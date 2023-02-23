@@ -6,7 +6,7 @@ from openmm.unit import *
 
 import sys
 sys.path.append('../')
-from reporter import InterAtomicReporter
+from curp_reporter.InterAtomicReporter import InterAtomicReporter
 
 class ReporterTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -62,7 +62,7 @@ class ReporterTest(unittest.TestCase):
 
         # Simulate
         print('Simulating...')
-        simulation.reporters.append(InterAtomicReporter.InterAtomicReporter('log.txt', 100))
+        simulation.reporters.append(InterAtomicReporter('log.txt', 100))
         simulation.currentStep = 0
         simulation.step(steps)
 
