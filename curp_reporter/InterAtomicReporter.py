@@ -2,11 +2,45 @@ from __future__ import absolute_import
 __author__ = "Yudai Okubo"
 __version__ = "0.0.1"
 
+import sys
+
 import openmm as mm
 from openmm.app import Simulation, Topology
 import openmm.unit
 
-import sys
+class AtomInfo():
+            def __init__(self) -> None:
+                self.name = ""
+                self.element = None
+                self.index = None
+                self.residue = None
+                self.id = None
+            def addNameAndId(self, name, element, index, residue, id):
+                self.name = name
+                self.element = element
+                self.index = index
+                self.residue = residue
+                self.id = id
+            def addNonbondedParams(self, charge, sigma, epsilon):
+                self.charge = charge
+                self.sigma = sigma
+                self.epsilon = epsilon
+            def addPosition(self, position):
+                self.position = position
+            
+            @property
+            def getInfo(self):
+                print("-"*30)
+                print("name     :", self.name)
+                print("element  :", self.element)
+                print("index    :", self.element)
+                print("residue  :", self.residue)
+                print("id       :", self.id)
+                print("charge   :", self.charge)
+                print("sigma    :", self.sigma)
+                print("epsilon  :", self.epsilon)
+                print("position :", self.position)
+                print("-"*30, "\n")
 
 class InterAtomicReporter(object):
     """The base class of Reporter
@@ -55,40 +89,6 @@ class InterAtomicReporter(object):
         for bond in bonds:
             print(bond)
             break
-        
-        class AtomInfo():
-            def __init__(self) -> None:
-                self.name = ""
-                self.element = None
-                self.index = None
-                self.residue = None
-                self.id = None
-            def addNameAndId(self, name, element, index, residue, id):
-                self.name = name
-                self.element = element
-                self.index = index
-                self.residue = residue
-                self.id = id
-            def addNonbondedParams(self, charge, sigma, epsilon):
-                self.charge = charge
-                self.sigma = sigma
-                self.epsilon = epsilon
-            def addPosition(self, position):
-                self.position = position
-            
-            @property
-            def getInfo(self):
-                print("-"*30)
-                print("name     :", self.name)
-                print("element  :", self.element)
-                print("index    :", self.element)
-                print("residue  :", self.residue)
-                print("id       :", self.id)
-                print("charge   :", self.charge)
-                print("sigma    :", self.sigma)
-                print("epsilon  :", self.epsilon)
-                print("position :", self.position)
-                print("-"*30, "\n")
         
         harmonic_forces = forces[0]
         nonbonded_forces = forces[1]
@@ -153,14 +153,14 @@ class InterAtomicReporter(object):
         
         """
         Todo
-        1. [ ] conenct all the information that gonna be the parts of output(interatomic-force)
+        1. [x] conenct all the information that gonna be the parts of output(interatomic-force)
             - information necessary includes
-                1. [ ] atom id (the master id of each atoms registered in System)
-                1. [ ] atom type(CA, H, N, etc..)
-                1. [ ] atom's position (x,y,z)
-                1. [ ] atom's charge
-                1. [ ] atom's sigma
-                1. [ ] atoms's epsilon
+                1. [x] atom id (the master id of each atoms registered in System)
+                1. [x] atom type(CA, H, N, etc..)
+                1. [x] atom's position (x,y,z)
+                1. [x] atom's charge
+                1. [x] atom's sigma
+                1. [x] atoms's epsilon
         1. [ ] calculate interatomic force between atoms obtained in task1 by classical for looping with cutoff.
         1. [ ] calculate interatomic force in PME method.
         1. [ ] write out the time-series date of the interatomic forces inside a molecule.
