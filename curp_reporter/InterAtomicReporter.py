@@ -6,41 +6,10 @@ import sys
 
 import openmm as mm
 from openmm.app import Simulation, Topology
-import openmm.unit
+from openmm.unit import *
 
-class AtomInfo():
-            def __init__(self) -> None:
-                self.name = ""
-                self.element = None
-                self.index = None
-                self.residue = None
-                self.id = None
-            def addNameAndId(self, name, element, index, residue, id):
-                self.name = name
-                self.element = element
-                self.index = index
-                self.residue = residue
-                self.id = id
-            def addNonbondedParams(self, charge, sigma, epsilon):
-                self.charge = charge
-                self.sigma = sigma
-                self.epsilon = epsilon
-            def addPosition(self, position):
-                self.position = position
-            
-            @property
-            def getInfo(self):
-                print("-"*30)
-                print("name     :", self.name)
-                print("element  :", self.element)
-                print("index    :", self.element)
-                print("residue  :", self.residue)
-                print("id       :", self.id)
-                print("charge   :", self.charge)
-                print("sigma    :", self.sigma)
-                print("epsilon  :", self.epsilon)
-                print("position :", self.position)
-                print("-"*30, "\n")
+from .atominfo import AtomInfo
+from .interatomic_force import InterAtomicForce
 
 class InterAtomicReporter(object):
     """The base class of Reporter
@@ -84,22 +53,22 @@ class InterAtomicReporter(object):
         vels = state.getVelocities()
         # params = list(state.getParameters())
         topology = simulation.topology
-        bonds = topology.bonds()
         
-        for bond in bonds:
-            print(bond)
-            break
+        bonds = []
+        for bond in topology.bonds():
+            bonds.append(bond)
         
-        harmonic_forces = forces[0]
-        nonbonded_forces = forces[1]
-        periodictorison_forces = forces[2]
-
         unique_force_types = []
         for force in forces:
             if type(force) not in unique_force_types:
                 unique_force_types.append(type(force))
                 
         print(unique_force_types)
+        for force in forces:
+            if type(force) == mm.NonbondedForce:
+                nonbonded_forces = force
+            elif type(force) == mm.HarmonicBondForce:
+                harmonic_bond_forces = force
         
         """
         [<class 'openmm.openmm.HarmonicBondForce'>, 
@@ -125,22 +94,25 @@ class InterAtomicReporter(object):
                 print(atom.name, atom.element, atom.index, atom.residue, atom.id)
                 i += 1
         
-        sample_0 = harmonic_forces.getBondParameters(5)
-        print(sample_0)
-        sample_1 = nonbonded_forces.getParticleParameters(5)
-        print(sample_1)
-        num_nonbonded_forced_params = nonbonded_forces.getNumParticles()
-        
         for atom in atoms:
             atom.getInfo
+            
         
         print("-"*30)
-        print("Num atoms recorded in nonbonded_force :", num_nonbonded_forced_params)
+        print("Num atoms recorded in nonbonded_force :", nonbonded_forces.getNumParticles())
         print("Num atoms recorded in topology(system):", len(atoms))
         print("Length of positions recorded in state :", len(positions))
         print("Num of force types recorded in state  :", len(forces))
         print("Length of vels recorded in state      :", len(vels))
+        print("Num bonds recorded in harmonic_bond_force:", harmonic_bond_forces.getNumBonds())
+        print("Num bonds recorded in topology        :", len(bonds))
         print("-"*30, "\n")
+        
+        sample_harmonic_bond = harmonic_bond_forces.getBondParameters(1009)
+        sample_bond = bonds[1009]
+        print(sample_bond)
+        print(sample_harmonic_bond)
+        
 
         """
         charge : double
@@ -164,8 +136,11 @@ class InterAtomicReporter(object):
         1. [ ] calculate interatomic force between atoms obtained in task1 by classical for looping with cutoff.
         1. [ ] calculate interatomic force in PME method.
         1. [ ] write out the time-series date of the interatomic forces inside a molecule.
-        
         """
+        
+        interatomic_force = InterAtomicForce()
+        interatomic_force.setCutOffLenght(1.0*nanometers)
+        interatomic_force.cal_interatomic_force(atoms[0], atoms[1])
         
         for i in range(len(atoms)):
             if i >= len(atoms):
@@ -173,14 +148,15 @@ class InterAtomicReporter(object):
             else:
                 atoms_j = atoms[i+1:]
                 for j in range(len(atoms_j)):
-                    self._out.write(f'{simulation_time},{atoms[i].index}_{atoms[i].name},{atoms_j[j].index}_{atoms_j[j].name},{atoms[i].charge}\n'.encode(encoding='UTF-8'))
+                    interatomic_force = InterAtomicForce()
+                    interatomic_force.setCutOffLenght(1.0*nanometers)
+                    force_ij = interatomic_force.cal_interatomic_force(atoms[i], atoms_j[j])
+                    self._out.write(f'{simulation_time},{atoms[i].index}_{atoms[i].name},{atoms_j[j].index}_{atoms_j[j].name},{force_ij}\n'.encode(encoding='UTF-8'))
             # self._out.write(f'{simulation_time},{},{_params[1]},{_params[2]},{_params[3]}\n'.encode(encoding='UTF-8'))
 
         # for bond in bonds:
         #     donor, accepter, quantity = bond[0], bond[1], 0
         #     self._out.write(f'{simulation_time},{str(donor.id)}_{donor.name},{str(accepter.id)}_{accepter.name},{quantity}\n'.encode(encoding='UTF-8'))
-        
-        sys.exit()
         
 class InterAtomicForceReporter(InterAtomicReporter):
     
