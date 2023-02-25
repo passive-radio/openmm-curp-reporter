@@ -8,8 +8,7 @@ import openmm as mm
 from openmm.app import Simulation, Topology
 from openmm.unit import *
 
-from .atominfo import AtomInfo
-from .interatomic_force import InterAtomicForce
+from .interatomic_class import AtomInfo, Pairs, Pair
 
 class InterAtomicReporter(object):
     """The base class of Reporter
@@ -34,6 +33,44 @@ class InterAtomicReporter(object):
         return (steps, self, True, True, True, True)
     
     def report(self, simulation: Simulation, state: mm.State):
+        """_summary_
+
+        Parameters
+        ----------
+        simulation : Simulation
+            _description_
+        state : mm.State
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+class InterAtomicForceReporter(InterAtomicReporter):
+    
+    def __init__(self, file, reportInterval) -> None:
+        super().__init__(file, reportInterval)
+        self._out.write('step,donor,accepter,force\n'.encode('UTF-8'))
+
+    def describeNextReport(self, simulation: Simulation):
+        return super().describeNextReport(simulation)
+    
+    def report(self, simulation: Simulation, state: mm.State):
+        """_summary_
+
+        Parameters
+        ----------
+        simulation : Simulation
+            _description_
+        state : mm.State
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         
         """
         # ToDo
@@ -63,7 +100,7 @@ class InterAtomicReporter(object):
             if type(force) not in unique_force_types:
                 unique_force_types.append(type(force))
                 
-        print(unique_force_types)
+        # print(unique_force_types)
         for force in forces:
             if type(force) == mm.NonbondedForce:
                 nonbonded_forces = force
@@ -87,31 +124,31 @@ class InterAtomicReporter(object):
             else:
                 atom_params = nonbonded_forces.getParticleParameters(i)
                 atom_register = AtomInfo()
-                atom_register.addNameAndId(atom.name, atom.element, atom.index, atom.residue, atom.id)
-                atom_register.addNonbondedParams(atom_params[0], atom_params[1], atom_params[2])
-                atom_register.addPosition(positions[i])
+                atom_register.add_name_and_ids(atom.name, atom.element, atom.index, atom.residue, atom.id)
+                atom_register.add_nonbonded_params(atom_params[0], atom_params[1], atom_params[2])
+                atom_register.add_position(positions[i])
                 atoms.append(atom_register)
-                print(atom.name, atom.element, atom.index, atom.residue, atom.id)
                 i += 1
+                
         
         for atom in atoms:
-            atom.getInfo
+            atom.get_info
             
         
-        print("-"*30)
-        print("Num atoms recorded in nonbonded_force :", nonbonded_forces.getNumParticles())
-        print("Num atoms recorded in topology(system):", len(atoms))
-        print("Length of positions recorded in state :", len(positions))
-        print("Num of force types recorded in state  :", len(forces))
-        print("Length of vels recorded in state      :", len(vels))
-        print("Num bonds recorded in harmonic_bond_force:", harmonic_bond_forces.getNumBonds())
-        print("Num bonds recorded in topology        :", len(bonds))
-        print("-"*30, "\n")
+        # print("-"*30)
+        # print("Num atoms recorded in nonbonded_force :", nonbonded_forces.getNumParticles())
+        # print("Num atoms recorded in topology(system):", len(atoms))
+        # print("Length of positions recorded in state :", len(positions))
+        # print("Num of force types recorded in state  :", len(forces))
+        # print("Length of vels recorded in state      :", len(vels))
+        # print("Num bonds recorded in harmonic_bond_force:", harmonic_bond_forces.getNumBonds())
+        # print("Num bonds recorded in topology        :", len(bonds))
+        # print("-"*30, "\n")
         
-        sample_harmonic_bond = harmonic_bond_forces.getBondParameters(1009)
-        sample_bond = bonds[1009]
-        print(sample_bond)
-        print(sample_harmonic_bond)
+        # sample_harmonic_bond = harmonic_bond_forces.getBondParameters(1009)
+        # sample_bond = bonds[1009]
+        # print(sample_bond)
+        # print(sample_harmonic_bond)
         
 
         """
@@ -138,35 +175,24 @@ class InterAtomicReporter(object):
         1. [ ] write out the time-series date of the interatomic forces inside a molecule.
         """
         
-        interatomic_force = InterAtomicForce()
-        interatomic_force.setCutOffLenght(1.0*nanometers)
-        interatomic_force.cal_interatomic_force(atoms[0], atoms[1])
-        
+        pairs = Pairs()
         for i in range(len(atoms)):
             if i >= len(atoms):
                 break
             else:
-                atoms_j = atoms[i+1:]
+                atoms_j = atom[i+1]
                 for j in range(len(atoms_j)):
-                    interatomic_force = InterAtomicForce()
-                    interatomic_force.setCutOffLenght(1.0*nanometers)
-                    force_ij = interatomic_force.cal_interatomic_force(atoms[i], atoms_j[j])
-                    self._out.write(f'{simulation_time},{atoms[i].index}_{atoms[i].name},{atoms_j[j].index}_{atoms_j[j].name},{force_ij}\n'.encode(encoding='UTF-8'))
-            # self._out.write(f'{simulation_time},{},{_params[1]},{_params[2]},{_params[3]}\n'.encode(encoding='UTF-8'))
-
+                    pairs.add_pair(atoms[i], atoms_j[j])
+                    
+        pairs.cal_interatomic_force()
+        
+        for pair in pairs:
+            self._out.write(f'{simulation_time},{pair.atom_i.index}_{pair.atom_i.name},{pair.atom_j.index}_{pair.atom_j.name},{pair.fij}\n'.encode(encoding='UTF-8'))
+        
         # for bond in bonds:
         #     donor, accepter, quantity = bond[0], bond[1], 0
         #     self._out.write(f'{simulation_time},{str(donor.id)}_{donor.name},{str(accepter.id)}_{accepter.name},{quantity}\n'.encode(encoding='UTF-8'))
         
-class InterAtomicForceReporter(InterAtomicReporter):
-    
-    def __init__(self) -> None:
-        super().__init__()
-
-    def describeNextReport(self, simulation: Simulation):
-        return super().describeNextReport(simulation)
-    
-    def report(self, simulation: Simulation, state: mm.State):
         return super().report(simulation, state)
     
     
