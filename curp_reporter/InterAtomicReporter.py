@@ -180,7 +180,7 @@ class InterAtomicForceReporter(InterAtomicReporter):
             if i >= len(atoms):
                 break
             else:
-                atoms_j = atom[i+1]
+                atoms_j = atoms[i+1:]
                 for j in range(len(atoms_j)):
                     pairs.add_pair(atoms[i], atoms_j[j])
                     

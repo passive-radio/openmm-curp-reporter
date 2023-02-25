@@ -3,46 +3,58 @@ __author__ = "Yudai Okubo"
 __version__ = "0.0.1"
 
 import sys
+import math
 
 import openmm as mm
 from openmm.app import Simulation, Topology
-import openmm.unit
+from openmm.unit import *
 
 class AtomInfo():
-            def __init__(self) -> None:
-                self.name = ""
-                self.element = None
-                self.index = None
-                self.residue = None
-                self.id = None
-            def add_name_and_ids(self, name, element, index, residue, id):
-                self.name = name
-                self.element = element
-                self.index = index
-                self.residue = residue
-                self.id = id
-            def add_nonbonded_params(self, charge, sigma, epsilon):
-                self.charge = charge
-                self.sigma = sigma
-                self.epsilon = epsilon
-            def add_position(self, position):
-                self.position = position
-            
-            @property
-            def get_info(self):
-                print("-"*30)
-                print("name     :", self.name)
-                print("element  :", self.element)
-                print("index    :", self.element)
-                print("residue  :", self.residue)
-                print("id       :", self.id)
-                print("charge   :", self.charge)
-                print("sigma    :", self.sigma)
-                print("epsilon  :", self.epsilon)
-                print("position :", self.position)
-                print("-"*30, "\n")
+    """
+    Base class of the atom class for interatomic quantity calculation.
+    """
+
+    def __init__(self) -> None:
+        self.name = ""
+        self.element = None
+        self.index = None
+        self.residue = None
+        self.id = None
+
+    def add_name_and_ids(self, name, element, index, residue, id):
+        self.name = name
+        self.element = element
+        self.index = index
+        self.residue = residue
+        self.id = id
+
+    def add_nonbonded_params(self, charge, sigma, epsilon):
+        self.charge = charge
+        self.sigma = sigma
+        self.epsilon = epsilon
+
+    def add_position(self, position):
+        self.position = position
+
+    @property
+    def get_info(self):
+        print("-"*30)
+        print("name     :", self.name)
+        print("element  :", self.element)
+        print("index    :", self.element)
+        print("residue  :", self.residue)
+        print("id       :", self.id)
+        print("charge   :", self.charge)
+        print("sigma    :", self.sigma)
+        print("epsilon  :", self.epsilon)
+        print("position :", self.position)
+        print("-"*30, "\n")
                 
 class Pair():
+    """
+    Base class of Pair 
+    """
+
     def __init__(self, atom_i: AtomInfo, atom_j: AtomInfo, id_user_defined: int = None) -> None:
         """_summary_
 
@@ -59,10 +71,27 @@ class Pair():
         self.atom_j = atom_j
         self.id = id_user_defined
     
-class Pairs():
+class Pairs(object):
+    """
+    Pairs class
+    
+    # Description
+    Generator class for pairwise interatomic force calculation.
+    
+    """
     def __init__(self) -> None:
-        self.pairs: list(Pair) = None
-        pass
+        self.pairs: list(Pair) = []
+        self._i = 0
+        
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._i== len(self.pairs):
+            raise StopIteration
+        pair = self.pairs[self._i]
+        self._i += 1
+        return pair
     
     def add_pair(self, atom_i: AtomInfo, atom_j: AtomInfo, id_user_defined: int = None) -> bool:
         try:
@@ -88,14 +117,12 @@ class Pairs():
     def cal_interatomic_force(self):
         self._cal_interatomic_force()
     
-    
-
     def _cal_interatomic_force(self) -> kilojoules/(nanometers**2*moles):
         
         for pair in self.pairs:
             
-            atom_i = self.pair.atom_i
-            atom_j = self.pair.atom_j
+            atom_i = pair.atom_i
+            atom_j = pair.atom_j
             
             charge_i = atom_i.charge
             charge_j = atom_j.charge
@@ -112,10 +139,14 @@ class Pairs():
             r7 = r2**3 * r1
             r13 = r2**6 * r1
             
-            f_lj = ()
-
-            f_columnb = charge_i * charge_j / r2
-            pair.fij = f_columnb
+            sigma_ij = (sigma_i + sigma_j) / 2
+            epsilon_ij = (epsilon_i*epsilon_j)**(0.5)
+            
+            f_lj = 4*epsilon_ij * (-12*sigma_ij**12 / r13 + 6*sigma_ij**6 / r7)*(pos_j - pos_i)/r1
+            
+            print(f_lj)
+            f_columnb = (charge_i * charge_j / r2)*(pos_j - pos_i)/r1
+            pair.fij = f_columnb + f_lj
             
     def get_interatomic_force(self, index:int ) -> kilojoules/(nanometers**2*moles):
         """get_interatomic_force
